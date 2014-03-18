@@ -1,0 +1,60 @@
+#!/bin/sh
+
+ CA_PATH="/etc/pki/CA"
+
+ mv $CA_PATH/index.txt $CA_PATH/index.txt.oldversion
+ mv $CA_PATH/serial $CA_PATH/serial.oldversion
+
+ if [ -e /tmp/AfricaGrid-CA-tmpl-1-16.x86_64.rpm ] ; then
+      yum update -y /tmp/AfricaGrid-CA-tmpl-1-16.x86_64.rpm
+ else
+   zenity --info --text="/tmp/AfricaGrid-CA-tmpl-1-15.x86_64.rpm not found. Please download it"
+   exit
+ fi
+
+ ICC="`php -r 'require ("/var/www/CA/phpinc/varsCA.inc"); echo $ICC;'`"
+ OU="`php -r 'require ("/var/www/CA/phpinc/varsCA.inc"); echo $CAname;'`"
+ ssl_srv_cnf_tmp=$CA_PATH/srv.cnf.tmp
+ ssl_srv_cnf="/var/www/CA/mgt/restricted/resources/host.conf"
+ sed -e "s/ICC/$ICC/g" -e "s/OU/$OU/g" $ssl_srv_cnf_tmp > $ssl_srv_cnf
+
+ while [ "$passwd" == "" ] ; do
+   passwd=`zenity --entry --hide-text --text "Insert mysql password:"`
+   if [ $? -eq 1 ] ; then
+      exit
+   fi
+ done
+
+ sed -i -e "s/?>/  \$database = 'RA';\n  \$dbpass = \"$passwd\";\n  \$db_host = 'localhost';\n?>/g" /var/www/CA/phpinc/varsCA.inc
+
+ mv -f $CA_PATH/index.txt.oldversion $CA_PATH/index.txt
+ mv -f $CA_PATH/serial.oldversion $CA_PATH/serial
+
+ /etc/init.d/mysqld start
+
+ chkconfig mysqld on
+
+ mysqladmin -u root password "${passwd}"
+
+ mysql -u root -p${passwd} < $CA_PATH/RA_database.sql
+
+ cat $CA_PATH/index.txt | grep ^V | awk '{print $3}' > /tmp/serial.txt
+ 
+ while read line 
+  do 
+
+   EMAIL="`openssl x509 -in $CA_PATH/newcerts/$line.pem -noout -email`"
+   DN="`openssl x509 -in $CA_PATH/newcerts/$line.pem -noout -subject | awk -F 'subject= ' '{print $2}'`"
+   CN="`openssl x509 -in $CA_PATH/newcerts/$line.pem -noout -subject | awk -F 'CN=' '{print $2}'`"
+   L="`openssl x509 -in $CA_PATH/newcerts/$line.pem -noout -subject | awk -F '/' '{print $5}' | awk -F 'L=' '{print $2}'`"
+
+   mysql -u root -p${passwd} RA --exec "insert into users (FLname,email,DN,Institute,doctype,docnumber,authority,date_of_issue,RAcode,isRA) values('$CN','$EMAIL','$DN','$L','','','','','','N')"
+
+  done < /tmp/serial.txt
+
+ rm -f /tmp/serial.txt
+
+ /etc/init.d/httpd restart
+
+ zenity --info --text="The CA has been updated"
+
