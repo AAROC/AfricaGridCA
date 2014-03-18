@@ -1,0 +1,16 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<title>GILDA Certification Authority's home page</title><meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+<meta name="generator" content="HAPedit 3.0">
+<style type="text/css">
+@import url("layout.css");
+a#viewcss{color: #00f;font-weight: bold}
+</style>
+</head>
+<body>
+<p>
+<h1><?php echo $CAname;?> CA is under manteinance. Sorry for the inconvenience</h1>
+
+<?
+include ("/var/www/CA/phpinc/bottom.inc");
+?>

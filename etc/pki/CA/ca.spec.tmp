@@ -1,0 +1,30 @@
+%define	name CA_NAME
+%define version	1.0
+%define release	1
+%define _topdir /etc/pki/CA/rpmbuild/
+
+Summary: CA_NAME Certification Authority
+Name: ca_%{name}
+Version: %{version}
+Release: %{release}
+License: GPL
+BuildArch: noarch
+
+%description
+CA_NAME rpm
+
+%prep
+exit 0
+
+%build
+exit 0
+
+%install
+exit 0
+
+%clean
+exit 0
+
+%files
+%defattr(-, root, root)
+/etc/grid-security/certificates
