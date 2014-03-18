@@ -21,28 +21,28 @@ do_ins () {
  touch $CA_PATH/index.txt
 
  while [ "$ICC" == "" ] || [ ${#ICC} -gt 2 ] ; do
-   ICC=`zenity --entry --text "Insert your two letters ISO Country Code (ex. IT for Italy):"`
+   ICC=`dialog --entry --text "Insert your two letters ISO Country Code (ex. IT for Italy):"`
    ck_exit_code
  done
  ICC=`echo $ICC | awk '{ print toupper($ICC) }'`
 
  while [ "$OU" == "" ] ; do
-   OU=`zenity --entry --text "Insert your Organization Unit (ex. GILDA):"`
+   OU=`dialog --entry --text "Insert your Organization Unit (ex. GILDA):"`
    ck_exit_code
  done
  OU=`echo $OU| awk '{ print toupper($OU) }' | tr -s " " -`
 
  while [ "$EMAIL" == "" ] ; do
-   EMAIL=`zenity --entry --text "Insert administrator's e-mail:"`
+   EMAIL=`dialog --entry --text "Insert administrator's e-mail:"`
    ck_exit_code
  done
 
  ins_pass
 
- question=`zenity --question --text="Would you like to upload a LOGO?"`
+ question=`dialog --question --text="Would you like to upload a LOGO?"`
  if [ $? -eq 0 ] ;then
   while [ "$LOGO" == "" ] ; do
-   LOGO=`zenity --file-selection`
+   LOGO=`dialog --file-selection`
    ck_exit_code
   done
  fi
@@ -79,9 +79,9 @@ do_ins () {
 
  mysql -u root -p${passwd}`date +%Y` RA --exec "insert into users (FLname,email,DN,Institute,doctype,docnumber,authority,date_of_issue,RAcode,isRA) values('','$EMAIL','','','','','','','$RAcode','N')"
 
- zenity --info --text="RAcode is $RAcode"
+ dialog --info --text="RAcode is $RAcode"
 
- zenity --info --text="$OU Certification Authority is ready and available at https://$ip/CA"
+ dialog --info --text="$OU Certification Authority is ready and available at https://$ip/CA"
 
  rm -rf $CA_PATH/rpmbuild
 }
@@ -92,10 +92,10 @@ do_RA (){
    email=""
 
    while [ "$email" == "" ] ; do
-     email=`zenity --entry --text "Insert e-mail address of new RA"`
+     email=`dialog --entry --text "Insert e-mail address of new RA"`
      exist="`mysql -s -N -u root -p${mysqlpswd} RA --exec "select email from users where email='$email' and DN like '%Personal%'"`"
      if [ "$exist" == "" ] ; then
-       zenity --error --text="Email address not found"
+       dialog --error --text="Email address not found"
        main
      fi
    done
@@ -105,19 +105,19 @@ do_RA (){
    isRA="`mysql -s -N -u root -p${mysqlpswd} RA --exec "select isRA from users where email='$email'"`"
 
    if [ "$isRA" == "Y" ]; then
-     zenity --warning --text="$email --> <b>$CN</b> is already set as RA"
-     zenity --question --text "Do you want to unset it as RA?"
+     dialog --warning --text="$email --> <b>$CN</b> is already set as RA"
+     dialog --question --text "Do you want to unset it as RA?"
      if [ $? = 0 ] ; then
        mysql -s -N -u root -p${mysqlpswd} RA --exec "update users set isRA='N' where email='$email'"
-       zenity --info --text="<b>$CN</b> is not a RA since now"
+       dialog --info --text="<b>$CN</b> is not a RA since now"
      fi
    else
-     zenity --info --text="$email --> <b>$CN</b> is not a RA"
-     zenity --question --text "Do you want to add it as RA?"
+     dialog --info --text="$email --> <b>$CN</b> is not a RA"
+     dialog --question --text "Do you want to add it as RA?"
      if [ $? = 0 ] ; then
        mysql -s -N -u root -p${mysqlpswd} RA --exec "update users set isRA='Y' where email='$email'"
        L="`mysql -s -N -u root -p${mysqlpswd} RA --exec "select Institute from users where email='$email'"`"
-       zenity --info --text="<b>$CN</b> is now a RA for <b>$L</b>"
+       dialog --info --text="<b>$CN</b> is now a RA for <b>$L</b>"
      fi
    fi
 
@@ -133,7 +133,7 @@ do_crl () {
 
  cp $CA_PATH/crl/crl.der /var/www/CA/crl
 
- zenity --info --text="The CRL has been created"
+ dialog --info --text="The CRL has been created"
 
  hash=`openssl x509 -in $CA_PATH/CAcert.pem -noout -hash`
  oldhash=`openssl x509 -in $CA_PATH/CAcert.pem -noout -subject_hash_old`
@@ -185,7 +185,7 @@ EOF
 
 ins_pass () {
  while [ "$passwd" == "" ] ; do
-   passwd=`zenity --entry --hide-text --text "Insert private key password:"`
+   passwd=`dialog --entry --hide-text --text "Insert private key password:"`
    ck_exit_code
  done
 }
@@ -193,11 +193,11 @@ ins_pass () {
 
 do_reset () {
 
-  answ=`zenity --question --text="Are you sure to reset the CA?"`
+  answ=`dialog --question --text="Are you sure to reset the CA?"`
 
   if [ $? = 0 ] ; then 
 
-    /etc/init.d/mysqld stop | zenity --progress --title="Stopping mysql server" --text="waiting" --percentage=40 --auto-close 
+    /etc/init.d/mysqld stop | dialog --progress --title="Stopping mysql server" --text="waiting" --percentage=40 --auto-close 
  
     rm -rf /var/lib/mysql
 
@@ -209,7 +209,7 @@ do_reset () {
 
     passwd=""
   
-    zenity --info --text "$OU CA has been reset"
+    dialog --info --text "$OU CA has been reset"
 
     do_ins
 
@@ -223,10 +223,10 @@ do_reset () {
 
 error () {
    if [ $? -eq 1 ] ; then
-      zenity --error --text "ERROR while signing the request $request_file : \n `cat $LOG`"
+      dialog --error --text "ERROR while signing the request $request_file : \n `cat $LOG`"
       continue
    else 
-      zenity --info --text "The request $request_file has been signed with success"
+      dialog --info --text "The request $request_file has been signed with success"
    fi
 }
 #########################################################################
@@ -241,7 +241,7 @@ ck_exit_code () {
 do_sign () {
 
  mysqlpswd="`php -r 'require ("/var/www/CA/phpinc/varsCA.inc"); echo $dbpass;'`"
- whatreq=`zenity --text "Make your choise: " --list --radiolist --column="Select" --column="Description" True "User or Robot" False "Server"`
+ whatreq=`dialog --text "Make your choise: " --list --radiolist --column="Select" --column="Description" True "User or Robot" False "Server"`
  case $whatreq in
    "User or Robot" );;
    "Server" );;
@@ -250,7 +250,7 @@ do_sign () {
  
  requests_path="$CA_PATH/htdocs/CAtmp"
  cd $requests_path
- requests=`zenity --file-selection --multiple`
+ requests=`dialog --file-selection --multiple`
 
  if [ "$requests" != "" ]; then
    tot_req_selected=`echo $requests | awk -F "|" '{print NF}'`
@@ -312,7 +312,7 @@ do_sign () {
 
    done
  else
-    zenity --error --text="No file selected"
+    dialog --error --text="No file selected"
  fi
  main
 }
@@ -375,16 +375,16 @@ EOF
 #########################################################################
 
 do_revoke () {
-  str=`zenity --entry --text "Enter the serial number to revoke"`
+  str=`dialog --entry --text "Enter the serial number to revoke"`
   if [ "$str" == "" ] ; then
-    zenity --warning --text "Please find serial number at the url:\n https://`hostname`/CA/mgt/restricted/scert.php"
+    dialog --warning --text "Please find serial number at the url:\n https://`hostname`/CA/mgt/restricted/scert.php"
   else
     ins_pass
     openssl ca -revoke $CA_PATH/newcerts/$str.pem -config $CA_PATH/openssl.cnf -passin pass:$passwd -batch &> $LOG
     if [ $? -eq 0 ] ; then
-       zenity --info --text "Certificate $str has been revoked"
+       dialog --info --text "Certificate $str has been revoked"
     else
-       zenity --error --text "ERROR while revoking $str certificate: \n `cat $LOG`"
+       dialog --error --text "ERROR while revoking $str certificate: \n `cat $LOG`"
     fi
   fi
   main
@@ -392,7 +392,7 @@ do_revoke () {
 #########################################################################
 
 main () {
- choise=`zenity --title "Certification Authority Management" --text "Make a choise: " --list --radiolist --column="Select" --column="Description" True "Sign a request" False "Revoke a certificate" False "Update the CRL" False "Add/Remove RA" False "Reset CA"`
+ choise=`dialog --title "Certification Authority Management" --text "Make a choise: " --list --radiolist --column="Select" --column="Description" True "Sign a request" False "Revoke a certificate" False "Update the CRL" False "Add/Remove RA" False "Reset CA"`
  case $choise in
    "Sign a request" ) do_sign ;;
    "Revoke a certificate" ) do_revoke;;
