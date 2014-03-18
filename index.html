@@ -47,6 +47,120 @@ The template also provides a basic configuration of the tools needed to operate 
 <li>Creation of Registration Authorities</li>
 </ol><p>The CA is managed via a script <code>runCA</code> which has a graphical frontend (zenity); an ncurses version is also under development.</p>
 
+<h1>
+<a name="prerequisites" class="anchor" href="#prerequisites"><span class="octicon octicon-link"></span></a>Prerequisites</h1>
+
+<p>The installation assumes a LAMP setup : </p>
+
+<ol>
+<li>CEntOS server (x86_64)</li>
+<li>mysql server</li>
+<li>Apache web server with php</li>
+</ol><p>Ansible is used to execute the configuration</p>
+
+<h1>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h1>
+
+<p>the AfricaGrid CA Template is available in this repository. You can install the CA with the provided Ansible playbooks. Previous versions of software are  distributed via <a href="http://gilda.ct.infn.it/africagrid-certification-authority-template">rpm</a>.</p>
+
+<h2>
+<a name="updating-from-an-existing-installation" class="anchor" href="#updating-from-an-existing-installation"><span class="octicon octicon-link"></span></a>Updating from an existing installation</h2>
+
+<p>If you have already installed an older version of the CA Template (&lt;1.14),
+and you want to preserve the existing configuration, issued certificates, etc use the <a href="../blob/master/updateCA.sh">update script</a> in the top-level directory. This will update the internal database to allow for the creation of RA's, which can bed done at this point.</p>
+
+<h2>
+<a name="installing-from-scratch" class="anchor" href="#installing-from-scratch"><span class="octicon octicon-link"></span></a>Installing from scratch</h2>
+
+<p>An Ansible playbook is provided to make basic configuration changes:</p>
+
+<ol>
+<li>Firewall: httpd needs to be reachable from the outside (ports 443 and 80</li>
+<li>Sendmail: needs to be working properly, as well as capable of delivering email.</li>
+<li>SELinux: disabled</li>
+</ol><h2>
+<a name="first-time-configuration" class="anchor" href="#first-time-configuration"><span class="octicon octicon-link"></span></a>First-time configuration</h2>
+
+<p>Once you've run the Ansible pre-config, the first-time configuration of the CA is done.  This is currently done with runCA, but could be done with Ansible as well. 
+There are a few important variables which need to be set in order to complete first-time configuration:</p>
+
+<ol>
+<li>
+<strong>Country Code</strong>: The ISO Country Code is a two-letter code identifying your Country and appears in every certificate subject. See <a href="http://en.wikipedia.org/wiki/ISO_3166-1">http://en.wikipedia.org/wiki/ISO_3166-1</a>
+</li>
+<li>
+<strong>Organization Unit</strong>: a string that will uniquely identify your CA. You
+may put the name of your project, experiment or your institution. <em>Note: choose a name with no spaces</em>.</li>
+<li>
+<strong>The CA passphrase</strong>: this will be used to decrypt the private key which is required to sign all requests. Of course, this passphrase should be kept extremely safe; if it's lost or stolen, you will have to recreate the CA from scratch, and the certificates already signed would be no longer valid.</li>
+<li>
+<strong>Logo</strong>: The initial script provides for making a small customization to the website template by uploading a logo. This will be placed in the top-lefthand-side of the CA web site.</li>
+<li>
+<strong>Administrator email</strong>:  This is the email address of the administrator of the CA. Note that you must be able to read email at this address, since it is associated with the first issued certificate and Registration Authority (see below).</li>
+</ol><p>Insertion of email will trigger the creation of the CA root certificate and configures the website and webserver. Once the CA has passed initial configuration, you will be presented with an <em>RA code</em>. The RA code shown at this stage is associated to the email of the CA manager inserted above, which is also the first certificate created, immediately after the CA configuration. 
+Save this code and use it to apply for the first certificate using the email previously inserted.</p>
+
+<p>You should be able to see the newly configured CA running at http:///CA</p>
+
+<h1>
+<a name="distribution" class="anchor" href="#distribution"><span class="octicon octicon-link"></span></a>Distribution</h1>
+
+<p>In order to trust the certificates issued by your CA, you need the clients to have access to the public key; if included in the IGTF roll, the CA cert will also need to be distributed in RPM format. 
+The <code>runCA</code> script creates this RPM and pushes the public keys, CRL and signing policy to <code>/var/www/CA</code>, which makes them available via the webserver as well. The RPM created takes the form:
+<code>ca_&lt;OU Name&gt;-&lt;version number&gt;.noarch.rpm</code>
+The RPM is noarch because it only contains the following files:</p>
+
+<ul>
+<li>
+<code>.0</code> is the CA public key.</li>
+<li>
+<code>.crl_url</code> it is needed by the sites accepting the CA in order to get the CRL updates </li>
+<li>
+<code>.r0</code> is the Certificate Revocation List file. This file is updated automatically by scripts that, reading periodically the CRL URL, and downloading the latest CRL version issued by the CA.</li>
+<li>
+<code>.signing_policy</code> contains some general info about the CA, like subject
+prefix, conditional subjects.</li>
+</ul><h2>
+<a name="certificate-revocation-lists" class="anchor" href="#certificate-revocation-lists"><span class="octicon octicon-link"></span></a>Certificate Revocation Lists</h2>
+
+<p>The Certificate Revocation List (CRL) is a file that lists all the certificates
+revoked by the CA. The CRL is authenticated by the CA public key signature. It has to be publicly available, so the CRL file is created under <code>/var/www/CA/crl</code>, which corresponds to the URL <code>http://IP address/CA/crl/crl.crl</code>
+This file is updated every time a certificate is revoked.</p>
+
+<h1>
+<a name="layout-of-the-website" class="anchor" href="#layout-of-the-website"><span class="octicon octicon-link"></span></a>Layout of the website</h1>
+
+<p>A very basic template of a website is provided for you to get started, based on PHP. This consists of a front page and a side menu which helps the user or RA to use the CA. The sections should be self-explanatory, but we provide a brief outline below.</p>
+
+<h2>
+<a name="home" class="anchor" href="#home"><span class="octicon octicon-link"></span></a>Home</h2>
+
+<p>Go to the home page, where general CA information is shown.</p>
+
+<h2>
+<a name="ca-certificate" class="anchor" href="#ca-certificate"><span class="octicon octicon-link"></span></a>CA certificate</h2>
+
+<p>This allows the user to download the CA public key and/or import in the browser. Before requesting a Personal or a Robot certificate, users have to import the CA certificate, so that the request can be properly generated. *** Note that this may not work automatically on Chrome/Chromium browsers - in this case, download and import the file manually (in PEM format). </p>
+
+<h2>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h2>
+
+<p>This section contains user information and instructions for requesting user, robot and host certificates.</p>
+
+<h2>
+<a name="request-a-personal-certificate" class="anchor" href="#request-a-personal-certificate"><span class="octicon octicon-link"></span></a>Request a Personal certificate</h2>
+
+<p>This section allows for the generation of a request for a personal certificate. In order to successfully submit this form, requestor must have been identified by a Registration Authority, who will generate the code to be inserted in the <code>RA code</code> field. 
+The code created by the RA is sent via email by the CA itself to the requestor. Users are also required to insert the following information:</p>
+
+<ul>
+<li>Institution name</li>
+<li>First and last name</li>
+<li>valid email address. 
+Upon submission of the request, the user will receive a confirmation email from the CA, requesting them to reply. This is a manual check in order to prevent against spam or identity theft. The CA manager must receive this confirmation, before signing the certificate request, according to the CP/CPS.</li>
+</ul>
+        </section>
+
         <aside id="sidebar">
           <a href="https://github.com/AAROC/AfricaGridCA/zipball/master" class="button">
             <small>Download</small>
@@ -59,7 +173,7 @@ The template also provides a basic configuration of the tools needed to operate 
 
           <p class="repo-owner"><a href="https://github.com/AAROC/AfricaGridCA"></a> is maintained by <a href="https://github.com/AAROC">AAROC</a>.</p>
 
-          
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
         </aside>
       </div>
     </div>
