@@ -1,8 +1,0 @@
-#!/bin/sh
-
-CA_PATH="/etc/pki/CA/"
-workdir="$CA_PATH/crl"
-
-openssl ca -gencrl -out $workdir/crl.pem -config $CA_PATH/openssl.cnf -passin pass:PASSWD
-openssl crl -in $workdir/crl.pem -outform der -out $workdir/crl.der
-cp -f $workdir/crl.der /var/www/CA/crl.crl
