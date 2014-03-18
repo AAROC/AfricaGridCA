@@ -88,3 +88,56 @@ The code created by the RA is sent via email by the CA itself to the requestor. 
  - First and last name
  - valid email address. 
 Upon submission of the request, the user will receive a confirmation email from the CA, requesting them to reply. This is a manual check in order to prevent against spam or identity theft. The CA manager must receive this confirmation, before signing the certificate request, according to the CP/CPS.
+
+## Request a Robot Certificate
+In order to successfully submit this form, the requestor must have been identified by a Registration Authority, who will generate the necessary RA code The code created by the RA via the form is again sent via email to the requestor. Users are requested to insert 
+ - Institution name
+ - Purpose of the certificate 
+ - valid email address.
+Similarly to the case of requesting a user certificate,  an email from
+the CA is sent to the requestor to confirm the email address. The CA manager
+must wait to receive this confirmation, before signing the certificate request. 
+
+## Certificate renewal
+Certificates issued are valid for one year. When a personal or a robot certificate is close to expiration, the certificate owner receives an email reminding them of this deadline. While the certificate remains valid and loaded in the owner's web browser, they can use the `Renew Personal or Robot certificate` section for the certificate renewal.
+
+Host certificate renewal reminders are generated in the same way, via an email to the owner, however the renewal should be requested with a signed email to the RA, containing the certificate renewal request in `pem` format. 
+
+## Registration Authority (RA)
+Registration Authorities (RA's) are individuals which hold delegated authority with the CA to identify individuals. This identification should take place face-to-face with the user. The user should produce national ID or passport in order to prove their identity, a copy of which should be stored by the RA safely. 
+Once this identification has taken place, the RA fills out a form - only available to RA's, identified by their personal certificates - in this section of the website, in order to generate the RA code for the user. The RA code is automatically generated and sent to the user independently of the RA via email.
+
+## Certificate Repository 
+The CA should provide public access to the list of issued certificates. In this section of the web site, visitors can check if certificates have been issued for a given Common Name and email. Both arguments have to be specified. This search function does not require a certificate loaded on the web browser.
+
+# Operating the CA
+Operation of the CA essentially consists of executing a few tasks, via the runCA script. These are described below.
+
+## Sign a request
+This is the most common task done by the CA. Upong selecting this option, you are presented with a choice to sign user or server certificates. This brings up a dialog to the file manager, showing the related pending requests. Note that only User/Robot certificate requests are automatically included in the directory, since host certificates have to be sent by email and are not possible via the website.
+ - User/Robot Certificates: The user requests are automatically copied into directory collecting request, so there’s no additional work required at this step. 
+- Server (Host) Certificates: When someone applies for an host certificate,
+request do not appear automatically in the directory collecting requests,
+because they are sent first to the RA. After validation, the host certificate
+requests are sent from RA as a signed email attachment. The CA manager copies the request file to `/etc/pki/CA/htdocs/CAtmp/servers/<hostname req>.pem` 
+and the request will appear in the Server directory when launching runCA. 
+
+In the future, this will be done with an Ansible playbook.
+
+When a request is signed, the submitter is informed via mail that the certificate requested is ready. The same email contains also a link for the certificate download, and related instructions.
+
+## Certificate Revocation
+In order to revoke a certificate, choose *Revoke a Certificate*. This will take a certificate serial number and remove it from the roll; the serial numbers can easily be checked via the *Certificate Repository* section of the website (** note that you have to remove the `0x` prefix, shown on the web page*). If the
+serial number inserted is valid, complete the certificate revocation by inserting the CA private key password. A cron job, running every hour, updates the CRL file.
+
+## Update CRL
+This is self-explanatory: a new CRL is generated and published to the website.
+
+## Add/Remove RA
+This option manages the Registration Authority identities. Users are of course identified by their personal certificates, so an RA candidate must already have a certificate issued. The email address of the user in question is required to match the serial number in the database, after which this is added to the db as an accredited RA. 
+
+Conversely, if an RA is to be deleted, insert the email address and the certificate serial number will be removed from the database.
+
+## Reset CA
+
+Clearly, you do not want to touch this unless WWIII has broken out.
