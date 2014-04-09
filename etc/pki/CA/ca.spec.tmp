@@ -3,7 +3,7 @@
 %define release	1
 %define _topdir /etc/pki/CA/rpmbuild/
 
-Summary: CA_NAME Certification Authority
+Summary: CA_NAME Certificate Authority
 Name: ca_%{name}
 Version: %{version}
 Release: %{release}
